@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 
 const services = [
   {
@@ -41,7 +41,9 @@ const brands = [
   { name: "AUDI", slug: "audi" },
   { name: "ŠKODA", slug: "skoda" },
   { name: "SEAT", slug: "seat" },
+  { name: "CUPRA", slug: "cupra" },
 ];
+
 
 const prices = [
   ["Enkel felkodsavläsning", "350 kr"],
@@ -50,38 +52,115 @@ const prices = [
   ["Avancerad felsökning", "895 kr/tim"],
   ["Kodning och aktivering", "Från 495 kr"],
   ["Start/Stop-anpassning", "Från 595 kr"],
-  ["Basic Settings och adaptioner", "Från 495 kr"],
+  ["Basic Settings / adaptioner", "Från 495 kr"],
   ["Retrofit och eftermonteringskodning", "Från 795 kr"],
   ["Modulbyte, kodning och kalibrering", "Från 1 495 kr"],
 ];
 
+const weekdays = ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"];
+
+const monthNames = [
+  "Januari", "Februari", "Mars", "April",
+  "Maj", "Juni", "Juli", "Augusti",
+  "September", "Oktober", "November", "December",
+];
+
+// Formaterar ett datum utan UTC-konvertering.
+function formatDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export default function Home() {
   const [contactOpen, setContactOpen] = useState(false);
+  const [bookingStatus, setBookingStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [bookingMessage, setBookingMessage] = useState("");
 
-  // Skickar bokningsuppgifterna till kundens SMS-app.
-  function handleBooking(event: FormEvent<HTMLFormElement>) {
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+const [calendarMonth, setCalendarMonth] = useState(
+  () => new Date(2000, 0, 1)
+);
+
+const [today, setToday] = useState("");
+
+useEffect(() => {
+  const now = new Date();
+
+  setToday(formatDate(now));
+  setCalendarMonth(
+    new Date(now.getFullYear(), now.getMonth(), 1)
+  );
+}, []);
+
+  const firstWeekday =
+    (calendarMonth.getDay() + 6) % 7;
+
+  const daysInMonth = new Date(
+    calendarMonth.getFullYear(),
+    calendarMonth.getMonth() + 1,
+    0
+  ).getDate();
+
+  const calendarDays = [
+    ...Array(firstWeekday).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  // Skickar bokningsförfrågan till API:t.
+  async function handleBooking(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
-    const fields = [
-      ["Telefon", formData.get("phone")],
-      ["Bil", formData.get("vehicle")],
-      ["Årsmodell", formData.get("year")],
-      ["Registreringsnummer", formData.get("registration")],
-      ["Tjänst", formData.get("service")],
-      ["Önskat datum", formData.get("date")],
-      ["Meddelande", formData.get("message")],
-    ];
+    const form = event.currentTarget;
+    const formData = new FormData(form);
 
-    const message = [
-      "Hej! Jag vill skicka en bokningsförfrågan till VAG Diagnos.",
-      "",
-      ...fields
-        .filter(([, value]) => value)
-        .map(([label, value]) => `${label}: ${value}`),
-    ].join("\n");
+    setBookingStatus("sending");
+    setBookingMessage("");
 
-    window.location.href = `sms:0729036436?body=${encodeURIComponent(message)}`;
+    const booking = {
+      phone: formData.get("phone"),
+      vehicle: "",
+      year: "",
+      registration: formData.get("registration"),
+      service: formData.get("service"),
+      preferred_date: selectedDate || null,
+      preferred_time: selectedTime || null,
+      message: formData.get("message"),
+    };
+
+    try {
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(booking),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Kunde inte skicka bokningen.");
+      }
+
+      setBookingStatus("success");
+      setBookingMessage(
+        "Tack! Din bokningsförfrågan har skickats. Vi kontaktar dig så snart vi kan."
+      );
+
+      form.reset();
+      setSelectedDate("");
+      setSelectedTime("");
+    } catch (error) {
+      console.error("Booking submission failed:", error);
+      setBookingStatus("error");
+      setBookingMessage(
+        "Något gick fel. Försök igen eller kontakta oss via telefon."
+      );
+    }
   }
 
   return (
@@ -123,14 +202,30 @@ export default function Home() {
 
       {/* VAG-märken */}
       <section className="border-y border-[#b99b63]/20 bg-[#11100e]">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-6 py-8 md:grid-cols-4">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-6 py-8 md:grid-cols-5">
           {brands.map((brand) => (
             <div key={brand.slug} className="flex items-center justify-center gap-3">
-              <img
-                src={`https://cdn.simpleicons.org/${brand.slug}/C6AA76`}
-                alt=""
-                className="h-6 w-7 object-contain"
-              />
+           <img
+  src={
+    brand.slug === "cupra"
+      ? "https://upload.wikimedia.org/wikipedia/commons/e/ef/Cupra_symbol.svg"
+      : `https://cdn.simpleicons.org/${brand.slug}/C6AA76`
+  }
+  alt=""
+  className={
+    brand.slug === "cupra"
+      ? "h-8 w-8 object-contain"
+      : "h-6 w-7 object-contain"
+  }
+  style={
+    brand.slug === "cupra"
+      ? {
+          filter:
+            "brightness(0) saturate(100%) invert(74%) sepia(18%) saturate(700%) hue-rotate(5deg) brightness(88%) contrast(88%)",
+        }
+      : undefined
+  }
+/>
               <span className="text-xs font-semibold tracking-[0.2em] text-[#c9c1b4]">
                 {brand.name}
               </span>
@@ -202,9 +297,17 @@ export default function Home() {
             {prices.map(([service, price]) => (
               <div
                 key={service}
-                className="flex items-start justify-between gap-5 border-b border-white/10 py-5"
+                className={`flex items-start justify-between gap-5 border-b border-white/10 py-5 ${
+                  service.startsWith("Basic Settings")
+                    ? "border-l-2 border-l-[#c6aa76] bg-[#c6aa76]/5 pl-4"
+                    : ""
+                }`}
               >
-                <span className="text-sm leading-6 text-[#d8d1c5] md:text-base">
+                <span className={`text-sm leading-6 md:text-base ${
+                  service.startsWith("Basic Settings")
+                    ? "font-semibold text-[#e2c895]"
+                    : "text-[#d8d1c5]"
+                }`}>
                   {service}
                 </span>
                 <span className="shrink-0 text-right text-sm font-semibold text-[#d5b982] md:text-base">
@@ -289,31 +392,6 @@ export default function Home() {
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label htmlFor="vehicle" className="mb-2 block text-sm text-[#d8d1c5]">
-                  Bilmodell
-                </label>
-                <input
-                  id="vehicle"
-                  name="vehicle"
-                  placeholder="Ex. VW Passat 2.0 TDI"
-                  className="w-full border border-white/15 bg-[#090909] px-4 py-3 text-sm text-white outline-none placeholder:text-[#777] focus:border-[#c6aa76]"
-                />
-              </div>
-              <div>
-                <label htmlFor="year" className="mb-2 block text-sm text-[#d8d1c5]">
-                  Årsmodell
-                </label>
-                <input
-                  id="year"
-                  name="year"
-                  placeholder="Ex. 2018"
-                  className="w-full border border-white/15 bg-[#090909] px-4 py-3 text-sm text-white outline-none placeholder:text-[#777] focus:border-[#c6aa76]"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
                 <label htmlFor="registration" className="mb-2 block text-sm text-[#d8d1c5]">
                   Registreringsnummer
                 </label>
@@ -335,26 +413,147 @@ export default function Home() {
                   className="w-full border border-white/15 bg-[#090909] px-4 py-3 text-sm text-[#d8d1c5] outline-none focus:border-[#c6aa76]"
                 >
                   <option value="">Välj tjänst</option>
-                  <option>Felkodsavläsning</option>
-                  <option>Felsökning</option>
-                  <option>Start/Stop</option>
-                  <option>Kodning och aktivering</option>
-                  <option>Servicefunktioner</option>
-                  <option>Retrofit och eftermontering</option>
+                  <option>Enkel felkodsavläsning – 350 kr</option>
+                  <option>Fullständig VCDS Auto-Scan – 495 kr</option>
+                  <option>Fördjupad diagnostik – 795 kr</option>
+                  <option>Avancerad felsökning – 895 kr/tim</option>
+                  <option>Kodning och aktivering – från 495 kr</option>
+                  <option>Start/Stop-anpassning – från 595 kr</option>
+                  <option>Basic Settings / adaptioner – från 495 kr</option>
+                  <option>Retrofit och eftermonteringskodning – från 795 kr</option>
+                  <option>Modulbyte, kodning och kalibrering – från 1 495 kr</option>
                   <option>Annat</option>
                 </select>
               </div>
             </div>
 
+            {/* Kalender */}
             <div>
-              <label htmlFor="date" className="mb-2 block text-sm text-[#d8d1c5]">
+              <label className="mb-3 block text-sm text-[#d8d1c5]">
                 Önskat datum
               </label>
+
+              <div className="border border-white/15 bg-[#090909] p-4 sm:p-5">
+                <div className="mb-5 flex items-center justify-between">
+                  <h3 className="font-semibold text-[#e2c895]">
+                    {monthNames[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
+                  </h3>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      aria-label="Föregående månad"
+                      onClick={() =>
+                        setCalendarMonth(
+                          new Date(
+                            calendarMonth.getFullYear(),
+                            calendarMonth.getMonth() - 1,
+                            1
+                          )
+                        )
+                      }
+                      disabled={
+  !today ||
+  (
+    calendarMonth.getFullYear() === Number(today.slice(0, 4)) &&
+    calendarMonth.getMonth() === Number(today.slice(5, 7)) - 1
+  )
+}
+                      className="flex h-9 w-9 items-center justify-center border border-white/15 text-[#c6aa76] transition hover:bg-[#252015] disabled:cursor-not-allowed disabled:opacity-25"
+                    >
+                      ‹
+                    </button>
+
+                    <button
+                      type="button"
+                      aria-label="Nästa månad"
+                      onClick={() =>
+                        setCalendarMonth(
+                          new Date(
+                            calendarMonth.getFullYear(),
+                            calendarMonth.getMonth() + 1,
+                            1
+                          )
+                        )
+                      }
+                      className="flex h-9 w-9 items-center justify-center border border-white/15 text-[#c6aa76] transition hover:bg-[#252015]"
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-7 gap-1">
+                  {weekdays.map((day) => (
+                    <div
+                      key={day}
+                      className="py-2 text-center text-xs font-medium text-[#8f877a]"
+                    >
+                      {day}
+                    </div>
+                  ))}
+
+                  {calendarDays.map((day, index) => {
+                    if (day === null) {
+                      return <div key={`empty-${index}`} />;
+                    }
+
+                    const date = new Date(
+                      calendarMonth.getFullYear(),
+                      calendarMonth.getMonth(),
+                      day
+                    );
+
+                    const dateValue = formatDate(date);
+                    const isPast = dateValue < today;
+                    const isSelected = selectedDate === dateValue;
+
+                    return (
+                      <button
+                        key={dateValue}
+                        type="button"
+                        disabled={isPast}
+                        onClick={() => setSelectedDate(dateValue)}
+                        aria-pressed={isSelected}
+                        className={`aspect-square rounded-sm text-sm transition ${
+                          isSelected
+                            ? "bg-[#c6aa76] font-semibold text-[#100e0a]"
+                            : isPast
+                              ? "cursor-not-allowed text-[#45413b]"
+                              : "text-[#d8d1c5] hover:bg-[#252015] hover:text-[#e2c895]"
+                        }`}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="mt-4 border-t border-white/10 pt-4 text-xs text-[#8f877a]">
+                  {selectedDate
+                    ? `Valt datum: ${new Date(`${selectedDate}T12:00:00`).toLocaleDateString("sv-SE", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}`
+                    : "Välj ett datum i kalendern."}
+                </p>
+              </div>
+            </div>
+
+            {/* Tidsval */}
+            <div>
+              <label htmlFor="time" className="mb-2 block text-sm text-[#d8d1c5]">
+                Önskat klockslag
+              </label>
               <input
-                id="date"
-                name="date"
-                type="date"
-                className="w-full border border-white/15 bg-[#090909] px-4 py-3 text-sm text-white outline-none focus:border-[#c6aa76]"
+                id="time"
+                name="time"
+                type="time"
+                value={selectedTime}
+                onChange={(event) => setSelectedTime(event.target.value)}
+                className="w-full border border-white/15 bg-[#090909] px-4 py-3 text-sm text-white outline-none focus:border-[#c6aa76] [color-scheme:dark]"
               />
             </div>
 
@@ -373,14 +572,17 @@ export default function Home() {
 
             <button
               type="submit"
-              className="w-full bg-[#c6aa76] px-7 py-4 text-sm font-semibold tracking-wide text-[#100e0a] transition hover:bg-[#dfc99f] sm:w-auto"
+              disabled={bookingStatus === "sending"}
+              className="w-full bg-[#c6aa76] px-7 py-4 text-sm font-semibold tracking-wide text-[#100e0a] transition hover:bg-[#dfc99f] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
-              SKAPA BOKNINGSFÖRFRÅGAN
+              {bookingStatus === "sending"
+                ? "SKICKAR..."
+                : "SKAPA BOKNINGSFÖRFRÅGAN"}
             </button>
-            <p className="text-xs leading-5 text-[#8f877a]">
-              Knappen öppnar din meddelandeapp med uppgifterna ifyllda.
-              Du skickar själv meddelandet. Tiden är inte bokad förrän vi
-              har bekräftat den.
+
+            <p aria-live="polite" className="text-xs leading-5 text-[#8f877a]">
+              {bookingMessage ||
+                "Tiden är inte bokad förrän vi har bekräftat den."}
             </p>
           </form>
         </div>
@@ -493,3 +695,4 @@ export default function Home() {
     </main>
   );
 }
+
