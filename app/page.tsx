@@ -204,7 +204,7 @@ useEffect(() => {
       <section className="border-y border-[#b99b63]/20 bg-[#11100e]">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-6 py-8 md:grid-cols-5">
           {brands.map((brand) => (
-            <div key={brand.slug} className="flex items-center justify-center gap-3">
+            <div key={brand.slug} className={`flex items-center gap-3 ${brand.slug === "cupra" ? "col-span-2 justify-center md:col-span-1" : "justify-start md:justify-center"}`}>
            <img
   src={
     brand.slug === "cupra"
@@ -297,17 +297,9 @@ useEffect(() => {
             {prices.map(([service, price]) => (
               <div
                 key={service}
-                className={`flex items-start justify-between gap-5 border-b border-white/10 py-5 ${
-                  service.startsWith("Basic Settings")
-                    ? "border-l-2 border-l-[#c6aa76] bg-[#c6aa76]/5 pl-4"
-                    : ""
-                }`}
+                className="flex items-start justify-between gap-5 border-b border-white/10 py-5"
               >
-                <span className={`text-sm leading-6 md:text-base ${
-                  service.startsWith("Basic Settings")
-                    ? "font-semibold text-[#e2c895]"
-                    : "text-[#d8d1c5]"
-                }`}>
+                <span className="text-sm leading-6 text-[#d8d1c5] md:text-base">
                   {service}
                 </span>
                 <span className="shrink-0 text-right text-sm font-semibold text-[#d5b982] md:text-base">
@@ -695,4 +687,6 @@ useEffect(() => {
     </main>
   );
 }
+
+
 
