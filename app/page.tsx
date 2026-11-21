@@ -3,6 +3,12 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 
+declare global {
+  interface Window {
+    dataLayer: Record<string, unknown>[];
+  }
+}
+
 const services = [
   {
     number: "01",
@@ -150,6 +156,10 @@ useEffect(() => {
       setBookingMessage(
         "Tack! Din bokningsförfrågan har skickats. Vi kontaktar dig så snart vi kan."
       );
+
+      // Skickar konverteringshändelse först efter lyckad bokning.
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({ event: "booking_submit" });
 
       form.reset();
       setSelectedDate("");
@@ -641,6 +651,10 @@ useEffect(() => {
             <div className="space-y-3">
               <a
                 href="tel:0729036436"
+                onClick={() => {
+                  window.dataLayer = window.dataLayer || [];
+                  window.dataLayer.push({ event: "phone_click" });
+                }}
                 className="flex items-center justify-between border border-[#c6aa76]/30 p-4 transition hover:bg-[#252015]"
               >
                 <span>
