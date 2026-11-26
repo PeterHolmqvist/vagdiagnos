@@ -63,6 +63,45 @@ const prices = [
   ["Modulbyte, kodning och kalibrering", "Från 1 495 kr"],
 ];
 
+
+const faqItems = [
+  {
+    question: "Motorlampan, airbaglampan eller ABS-lampan lyser – kan ni hjälpa mig?",
+    answer:
+      "Ja. Vi läser av bilens styrdon och undersöker vilka felkoder som finns lagrade för att hjälpa till att hitta orsaken. När felet har kontrollerats och vid behov åtgärdats kan felkoder raderas och varningslampor släckas om systemet tillåter det. En radering i sig reparerar inte grundfelet.",
+  },
+  {
+    question: "Kan ni återställa servicelampan och serviceindikatorn?",
+    answer:
+      "Ja. Efter utförd service, till exempel ett oljebyte, kan vi återställa serviceindikatorn på många Volkswagen-, Audi-, Škoda-, SEAT- och CUPRA-modeller. Vilka återställningar som stöds beror på bilens modell och årsmodell.",
+  },
+  {
+    question: "Hjälper ni till med partikelfilter (DPF), batteribyte och elektrisk handbroms?",
+    answer:
+      "Vi kan bland annat hjälpa till med DPF-diagnostik och regenerering, anpassning av differenstryckgivare (G450), batteriregistrering (BMS) och serviceläge för elektrisk parkeringsbroms. Funktionerna utförs när bilens styrsystem och aktuella förutsättningar stöder dem. En regenerering ersätter inte felsökning av ett underliggande fel.",
+  },
+  {
+    question: "Vad kostar det att läsa av felkoder i Eskilstuna?",
+    answer:
+      "Enkel felkodsavläsning kostar 350 kr. En fullständig VCDS Auto-Scan av bilens tillgängliga styrdon kostar 495 kr. Fördjupad diagnostik kostar från 795 kr. Du får ett prisförslag innan vi påbörjar mer omfattande felsökning.",
+  },
+  {
+    question: "Kan ni kontrollera en begagnad bil inför köp?",
+    answer:
+      "Ja. Vi kan läsa av bilens tillgängliga styrdon, kontrollera aktiva och lagrade felkoder och göra en diagnostisk genomgång inför bilköp i Eskilstuna med omnejd. På vissa modeller kan information om körsträcka finnas i flera styrdon, men det går inte att verifiera eller fastställa bilens faktiska miltal på det sättet på alla bilar. En diagnos ersätter inte en fullständig mekanisk besiktning.",
+  },
+  {
+    question: "Hjälper ni till med AdBlue-fel, DSG-inställningar och kodning av dragkrok?",
+    answer:
+      "Vi erbjuder diagnostik och, där bilen stöder det, grundinställningar för DSG, felsökning av AdBlue- och NOx-relaterade fel samt kodning och anpassning vid eftermontering av dragkrok. Funktioner som Start/Stop-anpassning och kurvljus beror på bilens modell, utrustning och mjukvara. Felorsaken behöver kontrolleras innan eventuella fel återställs.",
+  },
+  {
+    question: "Vilka årsmodeller och bilmodeller kan ni diagnostisera?",
+    answer:
+      "Vi arbetar med Volkswagen, Audi, Škoda, SEAT och CUPRA och använder VCDS för märkesanpassad diagnostik. Stöd och tillgängliga funktioner varierar mellan modell, årsmodell, utrustningsnivå och styrdon. Nyare bilar kan även ha säkerhetsbegränsningar som SFD eller SFD2. Kontakta oss gärna med registreringsnummer och vad du vill få gjort så kontrollerar vi förutsättningarna.",
+  },
+];
+
 const weekdays = ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"];
 
 const monthNames = [
@@ -589,6 +628,42 @@ useEffect(() => {
           </form>
         </div>
       </section>
+
+
+      {/* Vanliga frågor */}
+      <section id="vanliga-fragor" className="scroll-mt-24 border-t border-[#b99b63]/20 bg-[#11100e]">
+        <div className="mx-auto max-w-4xl px-6 py-20 md:py-24">
+          <p className="mb-4 text-xs tracking-[0.3em] text-[#c6aa76]">VANLIGA FRÅGOR</p>
+          <h2 className="mb-10 text-3xl font-semibold leading-tight md:text-4xl" style={{ fontFamily: "var(--font-manrope), sans-serif" }}>
+            Vanliga frågor om felsökning och felkoder i Eskilstuna
+          </h2>
+          <div className="divide-y divide-white/10 border-y border-white/10">
+            {faqItems.map((item) => (
+              <details key={item.question} className="group py-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-left text-sm font-semibold leading-6 text-[#e2c895] marker:content-none">
+                  {item.question}
+                  <span aria-hidden="true" className="shrink-0 text-xl text-[#c6aa76] transition group-open:rotate-45">+</span>
+                </summary>
+                <p className="mt-4 max-w-3xl text-sm leading-7 text-[#b9b2a7]">{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqItems.map((item) => ({
+              "@type": "Question",
+              name: item.question,
+              acceptedAnswer: { "@type": "Answer", text: item.answer },
+            })),
+          }).replace(/</g, "\u003c"),
+        }}
+      />
 
       {/* Kontakt och sidfot */}
       <footer className="border-t border-white/10 px-6 py-10">
