@@ -661,7 +661,7 @@ useEffect(() => {
               name: item.question,
               acceptedAnswer: { "@type": "Answer", text: item.answer },
             })),
-          }).replace(/</g, "\u003c"),
+          }).replace(/</g, "\\u003c"),
         }}
       />
 
